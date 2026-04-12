@@ -13,11 +13,8 @@ def seed_users():
     connection = None
     try:
         connection = get_db_connection()
-        if not connection:
-            print("Error: No se pudo obtener conexión para seeding.")
-            return False
-            
         cursor = connection.cursor()
+
 
         # 1. Crear Administrador - ruben.admin@educonnect.com / 1234567
         admin_pass = auth.get_password_hash("1234567")
