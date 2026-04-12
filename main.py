@@ -7,10 +7,15 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from routes import auth, modulos, evaluaciones
+from database import init_db
 
 load_dotenv()
 
 app = FastAPI(title="EduConnect Ruben API", description="LMS Backend for educational platform")
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 # CORS Configuration
 app.add_middleware(
