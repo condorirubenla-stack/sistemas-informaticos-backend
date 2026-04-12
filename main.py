@@ -51,9 +51,11 @@ def read_root():
     return {
         "client": "EduConnect Ruben",
         "status": "online",
-        "version": "2.0.0 Pro",
-        "author": "Antigravity AI"
+        "version": "2.0.1 Pro",
+        "has_db_url": bool(os.getenv("DATABASE_URL")),
+        "db_url_prefix": os.getenv("DATABASE_URL")[:15] if os.getenv("DATABASE_URL") else "N/A"
     }
+
 
 @app.get("/cargar-datos")
 def instalar_datos_iniciales():
