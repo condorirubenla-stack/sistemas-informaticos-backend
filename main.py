@@ -53,11 +53,9 @@ def read_root():
     return {
         "client": "EduConnect Ruben",
         "status": "online",
-        "version": "2.2.2 PRO",
+        "version": "3.0.0 PRO Stable",
         "database": db_status == "connected",
-        "hash_check": db_detail if db_status != "connected" else "Check /cargar-datos",
         "author": "Antigravity AI"
-
     }
 
 
