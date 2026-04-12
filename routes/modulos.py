@@ -138,6 +138,26 @@ def get_contenidos(modulo_id: int):
         conn.close()
 
 
+# ── POST NEW CONTENT (dynamic addition) ───────────────────────────────────────
+@router.post("/{modulo_id}/contenidos", dependencies=[Depends(get_current_user)])
+def add_contenido_extra(modulo_id: int, tipo: str, titulo: str, url: str, tema_num: int):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO contenidos (modulo_id, tipo, titulo, url, tema_num) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+            (modulo_id, tipo, titulo, url, tema_num)
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        return {"mensaje": "Material agregado", "id": new_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
 # ── UPDATE CONTENT URL ────────────────────────────────────────────────────────
 @router.put("/contenidos/{contenido_id}")
 def update_contenido(contenido_id: int, url: str, titulo: str = None):
