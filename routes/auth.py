@@ -98,3 +98,23 @@ def get_profesores():
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+@router.delete("/usuarios/{usuario_id}", dependencies=[Depends(get_current_user)])
+def delete_usuario(usuario_id: int):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        # Primero verificamos si el usuario existe
+        cur.execute("SELECT email FROM usuarios WHERE id = %s", (usuario_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+            
+        cur.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+        conn.commit()
+        return {"mensaje": "Usuario eliminado correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
