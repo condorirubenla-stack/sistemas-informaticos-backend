@@ -16,18 +16,35 @@ def rows_to_dicts(cursor, rows):
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection error")
-    cur = conn.cursor()
-    cur.execute("SELECT id, nombre, email, password, rol, nivel_asignado FROM usuarios WHERE email=%s", (form_data.username,))
-    row = cur.fetchone()
-    cur.close(); conn.close()
-    if not row or not auth.verify_password(form_data.password, row[3]):
-        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
-    token = auth.create_access_token(data={"sub": row[2]})
-    return {"access_token": token, "token_type": "bearer",
-            "rol": row[4], "nombre": row[1], "nivel_asignado": row[5]}
+    try:
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database connection error")
+        cur = conn.cursor()
+        cur.execute("SELECT id, nombre, email, password, rol, nivel_asignado FROM usuarios WHERE email=%s", (form_data.username,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        
+        if not row:
+            raise HTTPException(status_code=401, detail="Usuario no encontrado")
+            
+        is_valid = False
+        try:
+            is_valid = auth.verify_password(form_data.password, row[3])
+        except Exception as ve:
+            raise HTTPException(status_code=500, detail=f"Error verificando password: {str(ve)}")
+
+        if not is_valid:
+            raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+
+        token = auth.create_access_token(data={"sub": row[2]})
+        return {"access_token": token, "token_type": "bearer",
+                "rol": row[4], "nombre": row[1], "nivel_asignado": row[5]}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login crash: {str(e)}")
+
 
 @router.get("/me")
 def get_current_user(token: str = Depends(oauth2_scheme)):
