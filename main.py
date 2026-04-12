@@ -41,6 +41,19 @@ def instalar_datos_iniciales():
         from seed_modulos import seed_data
         seed_users()
         seed_data()
-        return {"mensaje": "¡Éxito! 20 Módulos base y Usuarios Administrador/Estudiante creados en PostgreSQL en la nube."}
+        
+        # Verify
+        from database import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT email, rol FROM usuarios")
+        users = cur.fetchall()
+        cur.close(); conn.close()
+        
+        return {
+            "mensaje": "¡Éxito! Base de datos inicializada.",
+            "usuarios_en_db": [u[0] for u in users],
+            "admin_confirmado": "ruben.admin@educonnect.com" in [u[0] for u in users]
+        }
     except Exception as e:
         return {"error": str(e)}

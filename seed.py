@@ -23,17 +23,19 @@ def seed_users():
         cursor = connection.cursor()
 
         # 1. Crear Administrador
-        admin_pass = auth.get_password_hash("1234567") # Contraseña será el carnet 1234567
+        admin_pass = auth.get_password_hash("1234567")
         cursor.execute("""
             INSERT INTO usuarios (nombre, apellido, email, password, rol) 
-            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (email) DO NOTHING
+            VALUES (%s, %s, %s, %s, %s) 
+            ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, rol = EXCLUDED.rol
         """, ("Ruben", "Admin", "ruben.admin@educonnect.com", admin_pass, "administrador"))
 
         # 2. Crear Estudiante
-        estudiante_pass = auth.get_password_hash("9876543") # Contraseña será el carnet 9876543
+        estudiante_pass = auth.get_password_hash("9876543")
         cursor.execute("""
             INSERT INTO usuarios (nombre, apellido, email, password, rol) 
-            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (email) DO NOTHING
+            VALUES (%s, %s, %s, %s, %s) 
+            ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password
         """, ("Juan", "Perez", "juan.perez@educonnect.com", estudiante_pass, "estudiante"))
 
         connection.commit()
