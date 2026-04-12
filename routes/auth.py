@@ -173,3 +173,24 @@ def delete_usuario(usuario_id: int):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+class PasswordResetBody(BaseModel):
+    new_password: str
+
+@router.put("/usuarios/{usuario_id}/password", dependencies=[Depends(get_current_user)])
+def reset_password(usuario_id: int, data: PasswordResetBody):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        hashed = auth.get_password_hash(data.new_password)
+        cur.execute("UPDATE usuarios SET password = %s WHERE id = %s", (hashed, usuario_id))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        conn.commit()
+        return {"mensaje": "Contraseña restablecida correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
