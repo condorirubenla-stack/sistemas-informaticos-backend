@@ -22,7 +22,8 @@ def get_db_connection():
         return conn
     except Exception as e:
         print(f"CRITICAL ERROR: No se pudo conectar a la base de datos: {e}")
-        return None
+        raise e # Raise to see details in /cargar-datos
+
 
 
 def init_db():
