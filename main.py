@@ -74,16 +74,16 @@ def instalar_datos_iniciales():
         from database import get_db_connection
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT email, rol FROM usuarios")
+        cur.execute("SELECT email, password FROM usuarios")
         users = cur.fetchall()
         cur.close(); conn.close()
         
         return {
             "status": "success" if success_users else "partial_success",
             "mensaje": "Base de datos inicializada correctamente.",
-            "usuarios_registrados": len(users),
-            "admin_presente": "ruben.admin@educonnect.com" in [u[0] for u in users]
+            "usuarios": [{"email": u[0], "hash_prefix": u[1][:15], "full_hash": u[1]} for u in users]
         }
+
     except Exception as e:
         return {"status": "error", "detalle": str(e)}
 
