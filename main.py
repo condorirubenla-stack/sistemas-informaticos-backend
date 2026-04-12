@@ -68,7 +68,7 @@ def read_root():
     return {
         "client": "EduConnect Ruben",
         "status": "online",
-        "version": "2.2.0 PRO",
+        "version": "2.2.1 PRO",
         "database": db_status == "connected",
         "author": "Antigravity AI"
     }
