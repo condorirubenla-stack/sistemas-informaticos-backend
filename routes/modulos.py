@@ -166,7 +166,7 @@ def get_inscritos_por_nivel():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT u.id, u.nombre, u.apellido, u.email, m.nivel, m.nombre AS modulo, p.estado, p.nota
+            SELECT u.id, u.nombre, u.apellido, u.email, m.nivel, m.nombre AS modulo, p.estado, p.nota, p.id AS progreso_id
             FROM progreso p
             JOIN usuarios u ON u.id = p.usuario_id
             JOIN modulos m ON m.id = p.modulo_id
@@ -174,6 +174,40 @@ def get_inscritos_por_nivel():
         """)
         inscritos = rows_to_dicts(cur, cur.fetchall())
         return {"inscritos": inscritos}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+# ── ADMIN: Asignar nota a un estudiante en un módulo ──────────────────────────
+@router.put("/admin/inscritos/{progreso_id}/nota", dependencies=[Depends(get_current_user)])
+def asignar_nota(progreso_id: int, nota: float):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        estado = 'aprobado' if nota >= 61 else 'reprobado'
+        cur.execute("UPDATE progreso SET nota=%s, estado=%s WHERE id=%s", (nota, estado, progreso_id))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Registro de progreso no encontrado")
+        conn.commit()
+        return {"mensaje": "Nota asignada correctamente", "estado": estado, "nota": nota}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+# ── STUDENT: get own grades ───────────────────────────────────────────────────
+@router.get("/mis-notas", dependencies=[Depends(get_current_user)])
+def get_mis_notas(current_user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT modulo_id, estado, nota FROM progreso WHERE usuario_id=%s", (current_user["id"],))
+        return {"progreso": rows_to_dicts(cur, cur.fetchall())}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
