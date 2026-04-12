@@ -52,13 +52,32 @@ app.include_router(evaluaciones.router, prefix="/evaluaciones", tags=["Evaluacio
 
 @app.get("/")
 def read_root():
+    db_status = "error"
+    db_detail = "No se detectó DATABASE_URL ni INTERNAL_DATABASE_URL"
+    
+    try:
+        from database import get_db_connection
+        conn = get_db_connection()
+        if conn:
+            db_status = "connected"
+            db_detail = "Conexión exitosa"
+            conn.close()
+    except Exception as e:
+        db_detail = str(e)
+
     return {
         "client": "EduConnect Ruben",
         "status": "online",
-        "version": "2.0.1 Pro",
-        "has_db_url": bool(os.getenv("DATABASE_URL")),
-        "db_url_prefix": os.getenv("DATABASE_URL")[:15] if os.getenv("DATABASE_URL") else "N/A"
+        "version": "2.1.0 PRO-MAX",
+        "database": {
+            "status": db_status,
+            "detail": db_detail,
+            "has_internal_url": bool(os.getenv("INTERNAL_DATABASE_URL")),
+            "has_external_url": bool(os.getenv("DATABASE_URL"))
+        },
+        "author": "Antigravity AI"
     }
+
 
 
 @app.get("/cargar-datos")

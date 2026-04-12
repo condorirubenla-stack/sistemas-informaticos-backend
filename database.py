@@ -5,24 +5,33 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_db_connection():
-    """Establece conexión con PostgreSQL usando DATABASE_URL o credenciales locales."""
+    """Establece conexión con PostgreSQL usando DATABASE_URL, INTERNAL_DATABASE_URL o credenciales locales."""
     try:
-        db_url = os.getenv("DATABASE_URL")
+        # Intentar primero con la URL de producción (Render)
+        db_url = os.getenv("INTERNAL_DATABASE_URL") or os.getenv("DATABASE_URL")
+        
         if db_url:
             # Render/Producción
             conn = psycopg2.connect(db_url)
-        else:
-            # Local/Desarrollo
-            conn = psycopg2.connect(
-                host=os.getenv("DB_HOST", "localhost"),
-                user=os.getenv("DB_USER", "postgres"),
-                password=os.getenv("DB_PASSWORD", "root"),
-                dbname=os.getenv("DB_NAME", "educonnect_ruben")
-            )
+            return conn
+            
+        # Si no hay URL, estamos en local o falta configuración
+        is_render = os.getenv("RENDER") == "true"
+        if is_render:
+            raise Exception("DATABASE_URL no encontrada en el entorno de Render. Verifica tus Variables de Entorno.")
+
+        # Local/Desarrollo
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "root"),
+            dbname=os.getenv("DB_NAME", "educonnect_ruben")
+        )
         return conn
     except Exception as e:
         print(f"CRITICAL ERROR: No se pudo conectar a la base de datos: {e}")
-        raise e # Raise to see details in /cargar-datos
+        raise e
+ # Raise to see details in /cargar-datos
 
 
 
