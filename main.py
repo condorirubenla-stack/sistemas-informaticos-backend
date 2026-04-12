@@ -30,6 +30,14 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(modulos.router, prefix="/modulos", tags=["Modulos"])
 app.include_router(evaluaciones.router, prefix="/evaluaciones", tags=["Evaluaciones"])
 
+@app.get("/test-auth")
+def test_auth():
+    return {"status": "prefix-not-working"}
+
+@app.get("/auth/test")
+def test_auth_prefix():
+    return {"status": "prefix-working"}
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to EduConnect-Ruben API"}
