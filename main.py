@@ -82,3 +82,35 @@ def instalar_datos_iniciales():
     except Exception as e:
         return {"status": "error", "detalle": str(e)}
 
+@app.get("/debug-db")
+def debug_database():
+    import os, psycopg2
+    try:
+        db_url = os.getenv("DATABASE_URL")
+        res = {
+            "has_url": bool(db_url),
+            "url_starts_with": db_url[:20] if db_url else None,
+            "env_keys": list(os.environ.keys())
+        }
+        
+        # Test raw connection
+        conn = None
+        try:
+            if db_url:
+                conn = psycopg2.connect(db_url)
+                res["raw_conn"] = "success"
+                # Check tables
+                cur = conn.cursor()
+                cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
+                res["tables"] = [t[0] for t in cur.fetchall()]
+                cur.close()
+            else:
+                res["raw_conn"] = "no url"
+        except Exception as conn_e:
+            res["raw_conn"] = f"failed: {str(conn_e)}"
+        finally:
+            if conn: conn.close()
+            
+        return res
+    except Exception as e:
+        return {"error": str(e)}
