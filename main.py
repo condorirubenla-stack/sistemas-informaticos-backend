@@ -70,8 +70,7 @@ def instalar_datos_iniciales():
         importlib.reload(seed)
         importlib.reload(seed_modulos)
         
-        success_users = seed.seed_users()
-        seed_modulos.seed_data()
+        reparados = seed_modulos.seed_data()
         
         # Verificación final
         from database import get_db_connection
@@ -82,10 +81,12 @@ def instalar_datos_iniciales():
         cur.close(); conn.close()
         
         return {
-            "status": "success" if success_users else "partial_success",
-            "version_actual": "4.1.0 ULTIMATE",
+            "status": "success",
+            "version_actual": "4.2.0 DIAGNOSTIC",
+            "modulos_reparados": reparados,
             "usuarios": [{"email": u[0], "rol": u[1], "prefix": u[2][:10]} for u in users]
         }
+
     except Exception as e:
         return {"status": "error", "detalle": str(e)}
 

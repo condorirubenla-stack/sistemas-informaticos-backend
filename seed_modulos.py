@@ -36,10 +36,11 @@ def seed_data():
                         reparados += 1
 
         connection.commit()
-        print(f"Reparación completada: {reparados} contenidos creados.")
-
+        return reparados
     except Exception as e:
         print(f"Error: {e}")
+        return 0
+
     finally:
         if 'connection' in locals() and connection:
             cursor.close(); connection.close()
