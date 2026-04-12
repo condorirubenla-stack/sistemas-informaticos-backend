@@ -17,26 +17,9 @@ app = FastAPI(title="EduConnect Ruben API", description="LMS Backend for educati
 
 @app.on_event("startup")
 def startup_event():
-    """Inicialización segura de la base de datos y datos maestros."""
-    try:
-        print("Verificando integridad de la base de datos...")
-        init_db()
-        
-        # Auto-seed si no hay administrador
-        from database import get_db_connection
-        conn = get_db_connection()
-        if conn:
-            cur = conn.cursor()
-            cur.execute("SELECT id FROM usuarios WHERE email='ruben.admin@educonnect.com'")
-            if not cur.fetchone():
-                print("Administrador no encontrado. Ejecutando seeding automático...")
-                from seed import seed_users
-                from seed_modulos import seed_data
-                seed_users()
-                seed_data()
-            cur.close(); conn.close()
-    except Exception as e:
-        print(f"WARNING: No se pudo auto-inicializar la DB en el arranque: {e}")
+    """Arranque ultra-rápido para evitar timeouts en Render."""
+    print("Servidor EduConnect iniciado correctamente.")
+
 
 # CORS Configuration
 
