@@ -15,12 +15,28 @@ app = FastAPI(title="EduConnect Ruben API", description="LMS Backend for educati
 
 @app.on_event("startup")
 def startup_event():
+    """Inicialización automática de la base de datos y datos maestros."""
+    print("Verificando integridad de la base de datos...")
     init_db()
+    
+    # Auto-seed si no hay administrador
+    from database import get_db_connection
+    conn = get_db_connection()
+    if conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM usuarios WHERE email='ruben.admin@educonnect.com'")
+        if not cur.fetchone():
+            print("Administrador no encontrado. Ejecutando seeding automático...")
+            from seed import seed_users
+            from seed_modulos import seed_data
+            seed_users()
+            seed_data()
+        cur.close(); conn.close()
 
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For production, restrict to actual frontend domains
+    allow_origins=["*"], # Permitir todos los orígenes para facilitar integraciones
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,17 +48,24 @@ app.include_router(evaluaciones.router, prefix="/evaluaciones", tags=["Evaluacio
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to EduConnect-Ruben API"}
+    return {
+        "client": "EduConnect Ruben",
+        "status": "online",
+        "version": "2.0.0 Pro",
+        "author": "Antigravity AI"
+    }
 
 @app.get("/cargar-datos")
 def instalar_datos_iniciales():
+    """Endpoint manual para forzar la recarga de datos maestros."""
     try:
         from seed import seed_users
         from seed_modulos import seed_data
-        seed_users()
+        
+        success_users = seed_users()
         seed_data()
         
-        # Verify
+        # Verificación final
         from database import get_db_connection
         conn = get_db_connection()
         cur = conn.cursor()
@@ -51,9 +74,11 @@ def instalar_datos_iniciales():
         cur.close(); conn.close()
         
         return {
-            "mensaje": "¡Éxito! Base de datos inicializada.",
-            "usuarios_en_db": [u[0] for u in users],
-            "admin_confirmado": "ruben.admin@educonnect.com" in [u[0] for u in users]
+            "status": "success" if success_users else "partial_success",
+            "mensaje": "Base de datos inicializada correctamente.",
+            "usuarios_registrados": len(users),
+            "admin_presente": "ruben.admin@educonnect.com" in [u[0] for u in users]
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {"status": "error", "detalle": str(e)}
+

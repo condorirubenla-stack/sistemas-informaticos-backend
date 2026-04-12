@@ -5,24 +5,21 @@ import security as auth
 
 load_dotenv()
 
+from database import get_db_connection
+
 def seed_users():
+    """Crea el administrador y usuarios de prueba si no existen."""
     print("Iniciando creación de usuarios...")
+    connection = None
     try:
-        db_url = os.getenv("DATABASE_URL")
-        if db_url:
-            connection = psycopg2.connect(db_url)
-        else:
-            # Fallback local usando postgres
-            connection = psycopg2.connect(
-                host=os.getenv("DB_HOST", "localhost"),
-                user=os.getenv("DB_USER", "postgres"),
-                password=os.getenv("DB_PASSWORD", "root"),
-                dbname=os.getenv("DB_NAME", "educonnect_ruben")
-            )
-        
+        connection = get_db_connection()
+        if not connection:
+            print("Error: No se pudo obtener conexión para seeding.")
+            return False
+            
         cursor = connection.cursor()
 
-        # 1. Crear Administrador
+        # 1. Crear Administrador - ruben.admin@educonnect.com / 1234567
         admin_pass = auth.get_password_hash("1234567")
         cursor.execute("""
             INSERT INTO usuarios (nombre, apellido, email, password, rol) 
@@ -30,7 +27,7 @@ def seed_users():
             ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, rol = EXCLUDED.rol
         """, ("Ruben", "Admin", "ruben.admin@educonnect.com", admin_pass, "administrador"))
 
-        # 2. Crear Estudiante
+        # 2. Crear Estudiante de prueba - juan.perez@educonnect.com / 9876543
         estudiante_pass = auth.get_password_hash("9876543")
         cursor.execute("""
             INSERT INTO usuarios (nombre, apellido, email, password, rol) 
@@ -39,14 +36,19 @@ def seed_users():
         """, ("Juan", "Perez", "juan.perez@educonnect.com", estudiante_pass, "estudiante"))
 
         connection.commit()
-        print("¡Usuarios creados exitosamente en PostgreSQL!")
+        print("¡Usuarios creados/actualizados exitosamente!")
+        return True
         
     except Exception as e:
         print(f"Error al insertar usuarios: {e}")
+        if connection:
+            connection.rollback()
+        return False
     finally:
-        if 'connection' in locals() and connection:
+        if connection:
             cursor.close()
             connection.close()
 
 if __name__ == "__main__":
     seed_users()
+
