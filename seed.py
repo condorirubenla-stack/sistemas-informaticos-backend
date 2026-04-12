@@ -43,8 +43,9 @@ def seed_users():
         print(f"Error al insertar usuarios: {e}")
         if connection:
             connection.rollback()
-        return False
+        raise e # Raise to see details in /cargar-datos
     finally:
+
         if connection:
             cursor.close()
             connection.close()
