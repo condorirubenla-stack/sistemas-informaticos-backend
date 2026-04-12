@@ -1,11 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 from database import get_db_connection
 import security as auth, psycopg2
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+class RegistroEstudiante(BaseModel):
+    nombre: str
+    apellido: str
+    email: str
+    password: str
+    nivel_asignado: Optional[str] = None
+
+class RegistroProfesorBody(BaseModel):
+    nombre: str
+    apellido: str
+    email: str
+    password: str
+    nivel_asignado: str
 
 class TokenData(BaseModel):
     username: str | None = None
@@ -83,6 +98,46 @@ def register_profesor(nombre: str, apellido: str, email: str, password: str, niv
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
+        conn.close()
+
+@router.post("/register-estudiante", dependencies=[Depends(get_current_user)])
+def register_estudiante(data: RegistroEstudiante):
+    """El admin inscribe un nuevo estudiante y define su correo y contraseña."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        hashed = auth.get_password_hash(data.password)
+        cur.execute(
+            "INSERT INTO usuarios (nombre, apellido, email, password, rol, nivel_asignado) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
+            (data.nombre, data.apellido, data.email, hashed, "estudiante", data.nivel_asignado)
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        return {"id": new_id, "email": data.email, "mensaje": f"Estudiante {data.nombre} inscrito correctamente"}
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@router.get("/estudiantes", dependencies=[Depends(get_current_user)])
+def get_estudiantes():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, nombre, apellido, email, nivel_asignado FROM usuarios WHERE rol='estudiante' ORDER BY nivel_asignado, nombre")
+        return {"estudiantes": rows_to_dicts(cur, cur.fetchall())}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
         conn.close()
 
 @router.get("/profesores")
