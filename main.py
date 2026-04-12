@@ -64,25 +64,31 @@ def read_root():
 def instalar_datos_iniciales():
     """Endpoint manual para forzar la recarga de datos maestros."""
     try:
-        from seed import seed_users
-        from seed_modulos import seed_data
+        import importlib
+        import seed
+        import seed_modulos
+        importlib.reload(seed)
+        importlib.reload(seed_modulos)
         
-        success_users = seed_users()
-        seed_data()
+        success_users = seed.seed_users()
+        seed_modulos.seed_data()
         
         # Verificación final
         from database import get_db_connection
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT email, password FROM usuarios")
+        cur.execute("SELECT email, rol, password FROM usuarios")
         users = cur.fetchall()
         cur.close(); conn.close()
         
         return {
             "status": "success" if success_users else "partial_success",
-            "mensaje": "Base de datos inicializada correctamente.",
-            "usuarios": [{"email": u[0], "hash_prefix": u[1][:15], "full_hash": u[1]} for u in users]
+            "version_actual": "4.1.0 ULTIMATE",
+            "usuarios": [{"email": u[0], "rol": u[1], "prefix": u[2][:10]} for u in users]
         }
+    except Exception as e:
+        return {"status": "error", "detalle": str(e)}
+
 
     except Exception as e:
         return {"status": "error", "detalle": str(e)}
