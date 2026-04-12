@@ -112,6 +112,23 @@ def get_contenidos(modulo_id: int):
         raise HTTPException(status_code=500, detail="Error de base de datos")
     try:
         cur = conn.cursor()
+        
+        # Self-healing: Asegurar que existan los 4 temas × 5 materiales
+        tipos = ["teoria", "video", "audio", "presentacion", "evaluacion"]
+        for tema_num in range(1, 5):
+            for tipo in tipos:
+                cur.execute(
+                    "SELECT id FROM contenidos WHERE modulo_id = %s AND tema_num = %s AND tipo = %s",
+                    (modulo_id, tema_num, tipo)
+                )
+                if not cur.fetchone():
+                    cur.execute(
+                        "INSERT INTO contenidos (modulo_id, tipo, titulo, url, tema_num) VALUES (%s, %s, %s, %s, %s)",
+                        (modulo_id, tipo, f"Tema {tema_num} - {tipo.capitalize()}", "", tema_num)
+                    )
+        conn.commit()
+
+        # Retornar todos los contenidos
         cur.execute("SELECT id, modulo_id, tipo, titulo, url, tema_num FROM contenidos WHERE modulo_id=%s ORDER BY tema_num, tipo", (modulo_id,))
         contenidos = rows_to_dicts(cur, cur.fetchall())
         return {"contenidos": contenidos}
@@ -119,6 +136,7 @@ def get_contenidos(modulo_id: int):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
 
 # ── UPDATE CONTENT URL ────────────────────────────────────────────────────────
 @router.put("/contenidos/{contenido_id}")
