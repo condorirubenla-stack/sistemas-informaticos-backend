@@ -16,22 +16,30 @@ def seed_users():
         cursor = connection.cursor()
 
 
-        # 1. Crear Administrador - ruben.admin@educonnect.com / 1234567
-        # Hash válido generado para "1234567"
-        admin_pass = "$2b$12$D6u9H/w6P8PqR0W9M/K5u.j.L8N1S.W5.L7Z9O1U2Y3X4W5V6U7t8"
+        # 1. Administrador
+        admin_pass = auth.get_password_hash("1234567")
         cursor.execute("""
             INSERT INTO usuarios (nombre, apellido, email, password, rol) 
             VALUES (%s, %s, %s, %s, %s) 
             ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, rol = EXCLUDED.rol
         """, ("Ruben", "Admin", "ruben.admin@educonnect.com", admin_pass, "administrador"))
 
-        # 2. Crear Estudiante de prueba - juan.perez@educonnect.com / 9876543
-        estudiante_pass = "$2b$12$6K8VfAnS.FqF3G5n.K.D.eZ.Y5e0X7X8c9v0u1t2r3s4q5p6o7n8m" # Este fallará pero el admin es el prioritario
+        # 2. Profesor
+        profe_pass = auth.get_password_hash("1234567")
         cursor.execute("""
             INSERT INTO usuarios (nombre, apellido, email, password, rol) 
             VALUES (%s, %s, %s, %s, %s) 
-            ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password
-        """, ("Juan", "Perez", "juan.perez@educonnect.com", estudiante_pass, "estudiante"))
+            ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, rol = EXCLUDED.rol
+        """, ("Ruben", "Profesor", "ruben.profe@educonnect.com", profe_pass, "docente"))
+
+        # 3. Estudiante
+        estu_pass = auth.get_password_hash("1234567")
+        cursor.execute("""
+            INSERT INTO usuarios (nombre, apellido, email, password, rol) 
+            VALUES (%s, %s, %s, %s, %s) 
+            ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, rol = EXCLUDED.rol
+        """, ("Ruben", "Estudiante", "ruben.estudiante@educonnect.com", estu_pass, "estudiante"))
+
 
 
 
