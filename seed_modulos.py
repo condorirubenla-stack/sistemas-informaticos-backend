@@ -13,53 +13,31 @@ def seed_data():
         )
         cursor = connection.cursor()
 
-        cursor.execute("SELECT COUNT(*) FROM modulos")
-        if cursor.fetchone()[0] > 0:
-            print("Módulos ya existen.")
-            cursor.close(); connection.close(); return
-
-        modulos_data = [
-            ("Taller de Sistemas Operativos I",    "Técnico Básico",   ""),
-            ("Matemática para la Informática",      "Técnico Básico",   ""),
-            ("Programación I-A",                   "Técnico Básico",   ""),
-            ("Hardware de Computadoras I",         "Técnico Básico",   ""),
-            ("Emergente I",                        "Técnico Básico",   ""),
-            ("Taller de Sistemas Operativos II",   "Técnico Auxiliar", ""),
-            ("Ofimática y Tecnología Multimedia I","Técnico Auxiliar", ""),
-            ("Programación I-B",                   "Técnico Auxiliar", ""),
-            ("Hardware de Computadoras II",        "Técnico Auxiliar", ""),
-            ("Emergente II",                       "Técnico Auxiliar", ""),
-            ("Inglés Técnico",                     "Técnico Medio I",  ""),
-            ("Diseño y Programación Web I-A",      "Técnico Medio I",  ""),
-            ("Programación I-C",                   "Técnico Medio I",  ""),
-            ("Ofimática y Tecnología Multimedia II","Técnico Medio I", ""),
-            ("Emprendimiento Productivo",           "Técnico Medio I",  ""),
-            ("Redes de Computadoras I",            "Técnico Medio II", ""),
-            ("Diseño y Programación Web I-B",      "Técnico Medio II", ""),
-            ("Base de Datos I",                    "Técnico Medio II", ""),
-            ("Programación Móvil I",               "Técnico Medio II", ""),
-            ("Modalidades de Graduación",          "Técnico Medio II", ""),
-        ]
+        # Recogemos todos los módulos actuales
+        cursor.execute("SELECT id, nombre FROM modulos")
+        modulos = cursor.fetchall()
 
         TIPOS = ["teoria", "video", "audio", "presentacion", "evaluacion"]
+        reparados = 0
 
-        for orden, mod in enumerate(modulos_data, start=1):
-            cursor.execute(
-                "INSERT INTO modulos (nombre, nivel, subnivel, orden) VALUES (%s,%s,%s,%s) RETURNING id",
-                (mod[0], mod[1], mod[2], orden)
-            )
-            mod_id = cursor.fetchone()[0]
-
-            # 4 temas × 5 tipos de material = 20 contenidos por módulo
+        for m_id, m_nombre in modulos:
+            # Para cada módulo, aseguramos 4 temas × 5 tipos
             for tema_num in range(1, 5):
                 for tipo in TIPOS:
                     cursor.execute(
-                        "INSERT INTO contenidos (modulo_id, tipo, titulo, url, tema_num) VALUES (%s,%s,%s,%s,%s)",
-                        (mod_id, tipo, f"Tema {tema_num} - {tipo.capitalize()}", "", tema_num)
+                        "SELECT id FROM contenidos WHERE modulo_id = %s AND tema_num = %s AND tipo = %s",
+                        (m_id, tema_num, tipo)
                     )
+                    if not cursor.fetchone():
+                        cursor.execute(
+                            "INSERT INTO contenidos (modulo_id, tipo, titulo, url, tema_num) VALUES (%s,%s,%s,%s,%s)",
+                            (m_id, tipo, f"Tema {tema_num} - {tipo.capitalize()}", "", tema_num)
+                        )
+                        reparados += 1
 
         connection.commit()
-        print("¡20 módulos con 4 temas cada uno creados!")
+        print(f"Reparación completada: {reparados} contenidos creados.")
+
     except Exception as e:
         print(f"Error: {e}")
     finally:
