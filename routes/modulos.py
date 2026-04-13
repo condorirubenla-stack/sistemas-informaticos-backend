@@ -177,6 +177,22 @@ def update_contenido(contenido_id: int, url: str, titulo: str = None):
     finally:
         conn.close()
 
+# ── DELETE CONTENT ────────────────────────────────────────────────────────────
+@router.delete("/contenidos/{contenido_id}", dependencies=[Depends(get_current_user)])
+def delete_contenido(contenido_id: int):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de base de datos")
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM contenidos WHERE id=%s", (contenido_id,))
+        conn.commit()
+        return {"mensaje": "Contenido eliminado"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
 # ── ADMIN: students per nivel with grades ─────────────────────────────────────
 @router.get("/admin/inscritos")
 def get_inscritos_por_nivel():
